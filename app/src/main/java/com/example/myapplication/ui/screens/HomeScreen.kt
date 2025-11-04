@@ -31,10 +31,10 @@ import com.example.myapplication.R
 import com.example.myapplication.ui.components.CustomTextField
 import com.example.myapplication.ui.components.PrimaryButton
 import com.example.myapplication.ui.theme.*
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-
 fun HomeScreen(
     exercice: String,
     dossier: String,
@@ -52,33 +52,44 @@ fun HomeScreen(
 
     val infiniteTransition = rememberInfiniteTransition(label = "gradient")
     val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidthDpInt = configuration.screenWidthDp
+    val screenHeightDpInt = configuration.screenHeightDp
+    val screenWidth = screenWidthDpInt.dp
+    val screenHeight = screenHeightDpInt.dp
     val density = LocalDensity.current
 
-    // responsive scaling factor
-    val scaleFactor = remember(screenWidth) {
+    // compute diagonal size in inches (1 dp = 1/160 in)
+    val diagonalDp = remember(screenWidthDpInt, screenHeightDpInt) {
+        sqrt((screenWidthDpInt * screenWidthDpInt + screenHeightDpInt * screenHeightDpInt).toDouble())
+    }
+    val screenInches = remember(diagonalDp) { diagonalDp / 160.0 }
+
+    // responsive scaling factor tuned to very small screens (e.g. < 3.5")
+    val scaleFactor = remember(screenWidthDpInt, screenHeightDpInt, screenInches) {
         when {
-            screenWidth < 360.dp -> 0.8f
-            screenWidth < 400.dp -> 0.9f
+            screenInches < 3.5 -> 0.65f     // very small handhelds (<= ~3.5")
+            screenInches < 4.0 -> 0.75f     // small phones
+            screenWidth < 320.dp -> 0.78f
+            screenWidth < 360.dp -> 0.85f
+            screenWidth < 400.dp -> 0.95f
             screenWidth < 600.dp -> 1f
             else -> 1.1f
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding((24* scaleFactor).dp),
+                .padding((24 * scaleFactor).dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Spacer(modifier = Modifier.height((32* scaleFactor).dp))
+            Spacer(modifier = Modifier.height((32 * scaleFactor).dp))
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -89,14 +100,14 @@ fun HomeScreen(
                     contentDescription = "Logo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .height((160* scaleFactor).dp)
-                        .width((160* scaleFactor).dp)
+                        .height((160 * scaleFactor).dp)
+                        .width((160 * scaleFactor).dp)
                 )
 
-                Spacer(modifier = Modifier.height((48* scaleFactor).dp))
+                Spacer(modifier = Modifier.height((48 * scaleFactor).dp))
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy((16* scaleFactor).dp),
+                    verticalArrangement = Arrangement.spacedBy((16 * scaleFactor).dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     AnimatedMenuButton(
@@ -122,7 +133,7 @@ fun HomeScreen(
             Column(
                 modifier = Modifier.fillMaxWidth(0.6f),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy((12* scaleFactor).dp)
+                verticalArrangement = Arrangement.spacedBy((12 * scaleFactor).dp)
             ) {
                 Card(
                     modifier = Modifier
@@ -132,12 +143,12 @@ fun HomeScreen(
                             color = DeepOcean,
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .clip(RoundedCornerShape(16.dp)) // 👈 empêche le ripple de sortir
+                        .clip(RoundedCornerShape(16.dp)) // empêche le ripple de sortir
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = rememberRipple(
-                                bounded = true,          // 👈 ripple reste dans les limites
-                                color = DeepOcean.copy(alpha = 0.2f) // 👈 couleur douce personnalisée
+                                bounded = true,
+                                color = DeepOcean.copy(alpha = 0.2f)
                             )
                         ) {
                             showConfigDialog = true
@@ -150,7 +161,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding((16* scaleFactor).dp),
+                            .padding((16 * scaleFactor).dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -176,12 +187,12 @@ fun HomeScreen(
                             color = DeepOcean,
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .clip(RoundedCornerShape(16.dp)) // 👈 empêche le ripple de sortir
+                        .clip(RoundedCornerShape(16.dp)) // empêche le ripple de sortir
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = rememberRipple(
-                                bounded = true,          // 👈 ripple reste dans les limites
-                                color = DeepOcean.copy(alpha = 0.2f) // 👈 couleur douce personnalisée
+                                bounded = true,
+                                color = DeepOcean.copy(alpha = 0.2f)
                             )
                         ) {
                             showConfigDialog = true
@@ -194,7 +205,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding((16 * scaleFactor).dp), // made responsive
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -213,21 +224,17 @@ fun HomeScreen(
                     }
                 }
 
-
-                Spacer(modifier = Modifier.height((30* scaleFactor).dp))
-
-
+                Spacer(modifier = Modifier.height((30 * scaleFactor).dp))
             }
         }
 
         FloatingActionButton(
-            onClick = {  },
+            onClick = { },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding((10* scaleFactor).dp),
+                .padding((10 * scaleFactor).dp),
             containerColor = BrightCyan,
             contentColor = DeepOcean
-
         ) {
             Icon(Icons.Default.Add, contentDescription = "Configurer")
         }
@@ -242,7 +249,7 @@ fun HomeScreen(
                     )
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy((16* scaleFactor).dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy((16 * scaleFactor).dp)) {
                         CustomTextField(
                             value = tempExercice,
                             onValueChange = { tempExercice = it },
@@ -280,8 +287,6 @@ fun HomeScreen(
             )
         }
 
-
-
         Text(
             text = "Tél : 0697277373 / 0770016832",
             style = MaterialTheme.typography.bodyMedium,
@@ -290,10 +295,8 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth(0.6f)
-
-                .padding(bottom = (8* scaleFactor).dp)
+                .padding(bottom = (8 * scaleFactor).dp)
         )
-
     }
 }
 
@@ -310,6 +313,21 @@ fun AnimatedMenuButton(
         visible = true
     }
 
+    // compute a small local scale for the buttons so they shrink on very small screens
+    val configuration = LocalConfiguration.current
+    val diagDp = remember(configuration) {
+        sqrt((configuration.screenWidthDp * configuration.screenWidthDp + configuration.screenHeightDp * configuration.screenHeightDp).toDouble())
+    }
+    val localInches = remember(diagDp) { diagDp / 160.0 }
+    val localScale = remember(localInches, configuration.screenWidthDp) {
+        when {
+            localInches < 3.5 -> 0.68f
+            localInches < 4.0 -> 0.80f
+            configuration.screenWidthDp < 360 -> 0.88f
+            else -> 1f
+        }
+    }
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(600)) +
@@ -319,16 +337,20 @@ fun AnimatedMenuButton(
                 )
     ) {
         var pressed by remember { mutableStateOf(false) }
-        val scale by animateFloatAsState(
+        val scaleAnim by animateFloatAsState(
             targetValue = if (pressed) 0.95f else 1f,
             animationSpec = spring(stiffness = Spring.StiffnessHigh),
             label = "scale"
         )
 
+        // keep the structure: PrimaryButton usage unchanged, but give it a responsive modifier
         PrimaryButton(
             text = text,
             onClick = onClick,
-            modifier = Modifier.scale(scale),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height((48 * localScale * scaleAnim).dp)
+                .scale(1f), // scale animation applied through height factor to avoid clipping on tiny screens
             backgroundColor = DeepOcean,
             contentColor = Color.White
         )

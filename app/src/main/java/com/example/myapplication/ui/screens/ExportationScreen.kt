@@ -24,6 +24,7 @@ import com.example.myapplication.data.CsvManager
 import com.example.myapplication.ui.theme.*
 import com.example.myapplication.utils.FileUtils
 import java.io.File
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,11 +39,27 @@ fun ExportationScreen(
     var showErrorMessage by remember { mutableStateOf(false) }
     var recordCount by remember { mutableStateOf(0) }
     val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val scaleFactor = remember(screenWidth) {
+
+    // use width and height dp ints to compute diagonal and detect very small screens
+    val screenWidthDpInt = configuration.screenWidthDp
+    val screenHeightDpInt = configuration.screenHeightDp
+    val screenWidth = screenWidthDpInt.dp
+    val screenHeight = screenHeightDpInt.dp
+
+    // compute diagonal size in dp and convert to inches (1 inch = 160 dp)
+    val diagonalDp = remember(screenWidthDpInt, screenHeightDpInt) {
+        sqrt((screenWidthDpInt * screenWidthDpInt + screenHeightDpInt * screenHeightDpInt).toDouble())
+    }
+    val screenInches = remember(diagonalDp) { diagonalDp / 160.0 }
+
+    // responsive scaling factor tuned to very small screens (e.g. < 3.5")
+    val scaleFactor = remember(screenWidthDpInt, screenHeightDpInt, screenInches) {
         when {
-            screenWidth < 360.dp -> 0.8f
-            screenWidth < 400.dp -> 0.9f
+            screenInches < 3.5 -> 0.5f     // very small handhelds (~3.5")
+            screenInches < 4.0 -> 0.75f     // small phones
+            screenWidth < 320.dp -> 0.78f
+            screenWidth < 360.dp -> 0.85f
+            screenWidth < 400.dp -> 0.95f
             screenWidth < 600.dp -> 1f
             else -> 1.1f
         }
@@ -67,7 +84,7 @@ fun ExportationScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(
-              Color.White
+                Color.White
             )
     ) {
         Column(
@@ -98,9 +115,9 @@ fun ExportationScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding((24* scaleFactor).dp),
+                    .padding((24 * scaleFactor).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy((24* scaleFactor).dp)
+                verticalArrangement = Arrangement.spacedBy((24 * scaleFactor).dp)
             ) {
                 Spacer(modifier = Modifier.weight(0.2f))
 
@@ -112,29 +129,22 @@ fun ExportationScreen(
                     ),
                 ) {
                     Column(
-                        modifier = Modifier.padding((32* scaleFactor).dp),
+                        modifier = Modifier.padding((32 * scaleFactor).dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                        verticalArrangement = Arrangement.spacedBy((20 * scaleFactor).dp)
                     ) {
                         Icon(
                             Icons.Default.FileDownload,
                             contentDescription = null,
-                            modifier = Modifier.size((64* scaleFactor).dp),
+                            modifier = Modifier.size((64 * scaleFactor).dp),
                             tint = DeepOcean
                         )
 
-                        Text(
-                            "Export de données",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = DeepOcean,
-                            textAlign = TextAlign.Center
-                        )
 
-                        Divider(color = LightGray)
+
 
                         Column(
-                            verticalArrangement = Arrangement.spacedBy((8* scaleFactor).dp),
+                            verticalArrangement = Arrangement.spacedBy((8 * scaleFactor).dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             InfoRow(label = "Fichier", value = csvManager.getFileName(dossier, exercice))
@@ -147,7 +157,7 @@ fun ExportationScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy((12* scaleFactor).dp)
+                            horizontalArrangement = Arrangement.spacedBy((12 * scaleFactor).dp)
                         ) {
                             Button(
                                 onClick = {
@@ -165,8 +175,8 @@ fun ExportationScreen(
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(56.dp),
-                                shape = RoundedCornerShape((16* scaleFactor).dp),
+                                    .height((56 * scaleFactor).dp),
+                                shape = RoundedCornerShape((16 * scaleFactor).dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = SuccessGreen,
                                     contentColor = SoftWhite
@@ -177,15 +187,13 @@ fun ExportationScreen(
                                 )
                             ) {
                                 Icon(Icons.Default.Download, contentDescription = null)
-                                Spacer(modifier = Modifier.width((12* scaleFactor).dp))
+                                Spacer(modifier = Modifier.width((12 * scaleFactor).dp))
                                 Text(
                                     "Télécharger",
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.titleMedium
                                 )
                             }
-
-
                         }
                     }
                 }
@@ -203,13 +211,13 @@ fun ExportationScreen(
             Snackbar(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp),
+                    .padding((16 * scaleFactor).dp),
                 containerColor = SuccessGreen,
                 contentColor = SoftWhite
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy((8 * scaleFactor).dp)
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Text("Opération réussie!", fontWeight = FontWeight.Bold)
@@ -226,13 +234,13 @@ fun ExportationScreen(
             Snackbar(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding((16* scaleFactor).dp),
+                    .padding((16 * scaleFactor).dp),
                 containerColor = ErrorRed,
                 contentColor = SoftWhite
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy((8 * scaleFactor).dp)
                 ) {
                     Icon(Icons.Default.Error, contentDescription = null)
                     Text("Aucune donnée à exporter!", fontWeight = FontWeight.Bold)
@@ -263,5 +271,3 @@ fun InfoRow(label: String, value: String) {
         )
     }
 }
-
-
